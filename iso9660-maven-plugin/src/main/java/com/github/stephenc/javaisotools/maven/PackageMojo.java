@@ -21,25 +21,27 @@ package com.github.stephenc.javaisotools.maven;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-
-import com.github.stephenc.javaisotools.eltorito.impl.ElToritoConfig;
-import com.github.stephenc.javaisotools.iso9660.ISO9660RootDirectory;
-import com.github.stephenc.javaisotools.iso9660.StandardConfig;
-import com.github.stephenc.javaisotools.iso9660.impl.ISOImageFileHandler;
-import com.github.stephenc.javaisotools.rockridge.impl.RockRidgeConfig;
-import com.github.stephenc.javaisotools.sabre.StreamHandler;
-import com.github.stephenc.javaisotools.iso9660.ConfigException;
-import com.github.stephenc.javaisotools.iso9660.impl.CreateISO;
-import com.github.stephenc.javaisotools.iso9660.impl.ISO9660Config;
-import com.github.stephenc.javaisotools.joliet.impl.JolietConfig;
-import com.github.stephenc.javaisotools.sabre.HandlerException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 import org.codehaus.plexus.util.StringUtils;
+
+import com.github.stephenc.javaisotools.eltorito.impl.ElToritoConfig;
+import com.github.stephenc.javaisotools.iso9660.ConfigException;
+import com.github.stephenc.javaisotools.iso9660.ISO9660RootDirectory;
+import com.github.stephenc.javaisotools.iso9660.StandardConfig;
+import com.github.stephenc.javaisotools.iso9660.impl.CreateISO;
+import com.github.stephenc.javaisotools.iso9660.impl.ISO9660Config;
+import com.github.stephenc.javaisotools.iso9660.impl.ISOImageFileHandler;
+import com.github.stephenc.javaisotools.joliet.impl.JolietConfig;
+import com.github.stephenc.javaisotools.rockridge.impl.RockRidgeConfig;
+import com.github.stephenc.javaisotools.sabre.HandlerException;
+import com.github.stephenc.javaisotools.sabre.StreamHandler;
 
 /**
  * Creates an iso9660 image.
@@ -49,371 +51,386 @@ import org.codehaus.plexus.util.StringUtils;
  */
 public class PackageMojo extends AbstractMojo {
 
-    /**
-     * The directory to place the iso9660 image.
-     *
-     * @parameter default-value="${project.build.directory}"
-     */
-    private File outputDirectory;
+  /**
+   * The directory to place the iso9660 image.
+   *
+   * @parameter default-value="${project.build.directory}"
+   */
+  private File outputDirectory;
 
-    /**
-     * The directory to capture the content from.
-     *
-     * @parameter default-value="${project.build.outputDirectory}"
-     */
-    private File inputDirectory;
+  /**
+   * The directory to capture the content from.
+   *
+   * @parameter default-value="${project.build.outputDirectory}"
+   */
+  private File inputDirectory;
 
-    /**
-     * The name of the file to create.
-     *
-     * @parameter default-value="${project.build.finalName}.${project.packaging}"
-     */
-    private String finalName;
+  /**
+   * The name of the file to create.
+   *
+   * @parameter default-value="${project.build.finalName}"
+   */
+  private String finalName;
 
-    /**
-     * The system id.
-     *
-     * @parameter
-     */
-    private String systemId;
+  /**
+   * The system id.
+   *
+   * @parameter
+   */
+  private String systemId;
 
-    /**
-     * The volume id.
-     *
-     * @parameter default-value="${project.artifactId}"
-     */
-    private String volumeId;
+  /**
+   * The volume id.
+   *
+   * @parameter default-value="${project.artifactId}"
+   */
+  private String volumeId;
 
-    /**
-     * The volume set id.
-     *
-     * @parameter
-     */
-    private String volumeSetId;
+  /**
+   * The volume set id.
+   *
+   * @parameter
+   */
+  private String volumeSetId;
 
-    /**
-     * The publisher.
-     *
-     * @parameter default-value="${project.organization.name}"
-     */
-    private String publisher;
+  /**
+   * The publisher.
+   *
+   * @parameter default-value="${project.organization.name}"
+   */
+  private String publisher;
 
-    /**
-     * The preparer.
-     *
-     * @parameter default-value="${project.organization.name}"
-     */
-    private String preparer;
+  /**
+   * The preparer.
+   *
+   * @parameter default-value="${project.organization.name}"
+   */
+  private String preparer;
 
-    /**
-     * The application.
-     *
-     * @parameter default-value="iso9660-maven-plugin"
-     */
-    private String application;
+  /**
+   * The application.
+   *
+   * @parameter default-value="iso9660-maven-plugin"
+   */
+  private String application;
 
-    /**
-     * Moved Directories Store Name.
-     *
-     * @parameter default-value="rr_moved"
-     */
-    private String movedDirectoriesStoreName;
+  /**
+   * Moved Directories Store Name.
+   *
+   * @parameter default-value="rr_moved"
+   */
+  private String movedDirectoriesStoreName;
 
-    /**
-     * The volume sequence number.
-     *
-     * @parameter
-     */
-    private Integer volumeSequenceNumber;
+  /**
+   * The volume sequence number.
+   *
+   * @parameter
+   */
+  private Integer volumeSequenceNumber;
 
-    /**
-     * The volume set size.
-     */
-    private Integer volumeSetSize;
-    
-    /**
-     * The maven project. This is injected by Maven.
-     *
-     * @parameter expression="${project}" @required @readonly
-     */
-    private MavenProject project;
+  /**
+   * The volume set size.
+   */
+  private Integer volumeSetSize;
 
-    /**
-     * enable RockRidge.
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean enableRockRidge;
+  /**
+   * The maven project. This is injected by Maven.
+   *
+   * @parameter expression="${project}" @required @readonly
+   */
+  private MavenProject project;
 
-    /**
-     * enable Joliet.
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean enableJoliet;
+  /**
+   * Maven ProjectHelper
+   * @component
+   */
+  private MavenProjectHelper projectHelper;
 
-    /**
-     * Allow Ascii.
-     *
-     * @parameter default-value="false"
-     */
-    private Boolean allowASCII;
+  /**
+   * enable RockRidge.
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean enableRockRidge;
 
-    /**
-     * The Interchange Level.
-     *
-     * @parameter default-value="1"
-     */
-    private Integer interchangeLevel;
+  /**
+   * enable Joliet.
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean enableJoliet;
 
-    /**
-     * Pad End.
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean padEnd;
+  /**
+   * Allow Ascii.
+   *
+   * @parameter default-value="false"
+   */
+  private Boolean allowASCII;
 
-    /**
-     * Restric Directory Depth to 8.
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean restrictDirDepthTo8;
+  /**
+   * The Interchange Level.
+   *
+   * @parameter default-value="1"
+   */
+  private Integer interchangeLevel;
 
-    /**
-     * Force Dot Delimiter.
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean forceDotDelimiter;
+  /**
+   * Pad End.
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean padEnd;
 
-    /**
-     * Mkisofs Compatibility.
-     *
-     * @parameter default-value="false"
-     */
-    private Boolean mkisofsCompatibility;
+  /**
+   * Restric Directory Depth to 8.
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean restrictDirDepthTo8;
 
-    /**
-     * Hide Moved Directories Store.
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean hideMovedDirectoriesStore;
+  /**
+   * Force Dot Delimiter.
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean forceDotDelimiter;
 
-    /**
-     * Force Portable Filename CharacterSet
-     *
-     * @parameter default-value="true"
-     */
-    private Boolean forcePortableFilenameCharacterSet;
+  /**
+   * Mkisofs Compatibility.
+   *
+   * @parameter default-value="false"
+   */
+  private Boolean mkisofsCompatibility;
 
-    /**
-     * Boot Image ID
-     *
-     * @parameter default-value=""
-     */
-    private String bootImagePlatformID;
+  /**
+   * Hide Moved Directories Store.
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean hideMovedDirectoriesStore;
 
-    /**
-     * Boot Image Emulation
-     *
-     * @parameter default-value=""
-     */
-    private String bootImageEmulation;
+  /**
+   * Force Portable Filename CharacterSet
+   *
+   * @parameter default-value="true"
+   */
+  private Boolean forcePortableFilenameCharacterSet;
 
-    /**
-     * The boot Image.
-     *
-     * @parameter
-     */
-    private File bootImage;
+  /**
+   * Boot Image ID
+   *
+   * @parameter default-value=""
+   */
+  private String bootImagePlatformID;
 
-    /**
-     * Boot Image ID
-     *
-     * @parameter default-value=""
-     */
-    private String bootImageID;
+  /**
+   * Boot Image Emulation
+   *
+   * @parameter default-value=""
+   */
+  private String bootImageEmulation;
 
-    /**
-     * Boot Image SectorCount
-     *
-     * @parameter default-value="1"
-     */
-    private Integer bootImageSectorCount;
+  /**
+   * The boot Image.
+   *
+   * @parameter
+   */
+  private File bootImage;
 
-    /**
-     * Boot Image SectorCount
-     *
-     * @parameter default-value="0"
-     */
-    private Integer bootImageLoadSegment;
+  /**
+   * Boot Image ID
+   *
+   * @parameter default-value=""
+   */
+  private String bootImageID;
 
-    /**
-     * Generate Boot Info Table
-     *
-     * @parameter default-value="false"
-     */
-    private boolean genBootInfoTable;
-    
-    /**
-     * A list of file permissions, mapping a pattern to a permission.
-     * Used for burning Rock Ridge information as a way to include permissions for particular files.
-     * 
-     * @parameter
-     */
-    private List<FilePermission> permissions = new ArrayList<FilePermission>();
+  /**
+   * Boot Image SectorCount
+   *
+   * @parameter default-value="1"
+   */
+  private Integer bootImageSectorCount;
 
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (permissions == null) {
-            System.out.println("*** Permissions list is null!");
-        } else {
-            if (permissions.isEmpty()) System.out.println("*** Permissions list is empty!");
-            else System.out.println(String.format("*** Permissions list has %d entries.", permissions.size()));
-        }
-        
-        
-        if (outputDirectory.isFile()) {
-            throw new MojoExecutionException("Output directory: " + outputDirectory + " is a file");
-        }
-        outputDirectory.mkdirs();
-        if (!outputDirectory.isDirectory()) {
-            throw new MojoExecutionException("Could not create output directory: " + outputDirectory);
-        }
-        
-        // Directory hierarchy, starting from the root
-        ISO9660RootDirectory.MOVED_DIRECTORIES_STORE_NAME = movedDirectoriesStoreName;
-        ISO9660RootDirectory root = new ISO9660RootDirectory();
+  /**
+   * Boot Image SectorCount
+   *
+   * @parameter default-value="0"
+   */
+  private Integer bootImageLoadSegment;
 
-        File isoFile = new File(outputDirectory, finalName);
-        
-        try {
-            if (inputDirectory.isDirectory()) {
-                root.addContentsRecursively(inputDirectory);
-            }
+  /**
+   * Generate Boot Info Table
+   *
+   * @parameter default-value="false"
+   */
+  private boolean genBootInfoTable;
 
-            StreamHandler streamHandler = new ISOImageFileHandler(isoFile);
-            CreateISO iso = new CreateISO(streamHandler, root);
-            ISO9660Config iso9660Config = new ISO9660Config();
-            iso9660Config.allowASCII(allowASCII.booleanValue());
-            iso9660Config.setInterchangeLevel(interchangeLevel.intValue());
-            iso9660Config.restrictDirDepthTo8(restrictDirDepthTo8.booleanValue());
-            iso9660Config.forceDotDelimiter(forceDotDelimiter.booleanValue());
-            iso9660Config.setInterchangeLevel(interchangeLevel.intValue());
-            iso9660Config.setPadEnd(padEnd.booleanValue());
-            applyConfig(iso9660Config);
+  /**
+   * Classifier to add to the artifact generated. If given, the artifact will be attached. If it's not given, it will merely be written to the output directory according to the
+   * finalName.
+   *
+   * @parameter
+   */
+  private String classifier;
 
-            RockRidgeConfig rrConfig = null;
+  /**
+   * A list of file permissions, mapping a pattern to a permission. Used for burning Rock Ridge information as a way to include permissions for particular files.
+   *
+   * @parameter
+   */
+  private final List<FilePermission> permissions = new ArrayList<FilePermission>();
 
-            if (enableRockRidge.booleanValue()) {
-	            rrConfig = new RockRidgeConfig();
-	            rrConfig.setMkisofsCompatibility(mkisofsCompatibility.booleanValue());
-	            rrConfig.hideMovedDirectoriesStore(hideMovedDirectoriesStore.booleanValue());
-	            rrConfig.forcePortableFilenameCharacterSet(forcePortableFilenameCharacterSet.booleanValue());
-                    
-                    for(FilePermission fp:permissions) {
-                        // Cycle through the pom conifuration values, adding them to the rrConfig.
-                        rrConfig.addModeForPattern(fp.getFilePattern(), fp.getPermissionAsInt());
-                    }
-            }
-
-            JolietConfig jolietConfig = null;
-
-            if (enableJoliet.booleanValue()) {
-	            jolietConfig = new JolietConfig();
-	            jolietConfig.forceDotDelimiter(forceDotDelimiter.booleanValue());
-	            applyConfig(jolietConfig);
-            }
-
-            // El Torito support
-            ElToritoConfig elToritoConfig = null;
-            if (bootImage != null) {
-                this.getLog().info("El Torito support enabled.");
-                elToritoConfig = new ElToritoConfig(bootImage, getBootEmulation(),
-                        getBootPlatformID(), bootImageID, bootImageSectorCount,
-                        bootImageLoadSegment);
-                elToritoConfig.setGenBootInfoTable(genBootInfoTable);
-            }
-
-            iso.process(iso9660Config, rrConfig, jolietConfig, elToritoConfig);
-        } catch (HandlerException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        } catch (FileNotFoundException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        } catch (ConfigException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        }
-        
-        project.getArtifact().setFile(isoFile);
+  public void execute() throws MojoExecutionException, MojoFailureException {
+    if (permissions == null) {
+      System.out.println("*** Permissions list is null!");
+    } else {
+      if (permissions.isEmpty()) {
+        System.out.println("*** Permissions list is empty!");
+      } else {
+        System.out.println(String.format("*** Permissions list has %d entries.", permissions.size()));
+      }
     }
 
-    private void applyConfig(StandardConfig config) throws ConfigException {
-        if (StringUtils.isNotEmpty(systemId)) {
-            config.setSystemID(systemId);
-        }
-        if (StringUtils.isNotEmpty(volumeId)) {
-            config.setVolumeID(volumeId);
-        }
-        if (StringUtils.isNotEmpty(volumeSetId)) {
-            config.setVolumeSetID(volumeSetId);
-        }
-        if (StringUtils.isNotEmpty(publisher)) {
-            config.setPublisher(publisher);
-        }
-        if (StringUtils.isNotEmpty(preparer)) {
-            config.setDataPreparer(preparer);
-        }
-        if (StringUtils.isNotEmpty(application)) {
-            config.setApp(application);
-        }
+    if (outputDirectory.isFile()) {
+      throw new MojoExecutionException("Output directory: " + outputDirectory + " is a file");
+    }
+    outputDirectory.mkdirs();
+    if (!outputDirectory.isDirectory()) {
+      throw new MojoExecutionException("Could not create output directory: " + outputDirectory);
     }
 
-    private int getBootEmulation() {
-        if (bootImageEmulation.matches(".*1.*2.*")) {
-            // 1.2 MB diskette
-            return ElToritoConfig.BOOT_MEDIA_TYPE_1_2MEG_DISKETTE;
-        } // else
+    // Directory hierarchy, starting from the root
+    ISO9660RootDirectory.MOVED_DIRECTORIES_STORE_NAME = movedDirectoriesStoreName;
+    ISO9660RootDirectory root = new ISO9660RootDirectory();
 
-        if (bootImageEmulation.matches(".*44.*")) {
-            // 1.44 MB diskette
-            return ElToritoConfig.BOOT_MEDIA_TYPE_1_44MEG_DISKETTE;
-        } // else
+    File isoFile = new File(outputDirectory, finalName);
 
-        if (bootImageEmulation.matches(".*88.*")) {
-            // 2.88 MB diskette
-            return ElToritoConfig.BOOT_MEDIA_TYPE_2_88MEG_DISKETTE;
-        } // else
+    try {
+      if (inputDirectory.isDirectory()) {
+        root.addContentsRecursively(inputDirectory);
+      }
 
-        if (bootImageEmulation.matches(".*(hd|hard).*")) {
-            // Hard disk
-            return ElToritoConfig.BOOT_MEDIA_TYPE_HD;
-        } // else
+      StreamHandler streamHandler = new ISOImageFileHandler(isoFile);
+      CreateISO iso = new CreateISO(streamHandler, root);
+      ISO9660Config iso9660Config = new ISO9660Config();
+      iso9660Config.allowASCII(allowASCII.booleanValue());
+      iso9660Config.setInterchangeLevel(interchangeLevel.intValue());
+      iso9660Config.restrictDirDepthTo8(restrictDirDepthTo8.booleanValue());
+      iso9660Config.forceDotDelimiter(forceDotDelimiter.booleanValue());
+      iso9660Config.setInterchangeLevel(interchangeLevel.intValue());
+      iso9660Config.setPadEnd(padEnd.booleanValue());
+      applyConfig(iso9660Config);
 
-        // Default: No Emulation
-        return ElToritoConfig.BOOT_MEDIA_TYPE_NO_EMU;
+      RockRidgeConfig rrConfig = null;
+
+      if (enableRockRidge.booleanValue()) {
+        rrConfig = new RockRidgeConfig();
+        rrConfig.setMkisofsCompatibility(mkisofsCompatibility.booleanValue());
+        rrConfig.hideMovedDirectoriesStore(hideMovedDirectoriesStore.booleanValue());
+        rrConfig.forcePortableFilenameCharacterSet(forcePortableFilenameCharacterSet.booleanValue());
+
+        for (FilePermission fp : permissions) {
+          // Cycle through the pom conifuration values, adding them to the rrConfig.
+          rrConfig.addModeForPattern(fp.getFilePattern(), fp.getPermissionAsInt());
+        }
+      }
+
+      JolietConfig jolietConfig = null;
+
+      if (enableJoliet.booleanValue()) {
+        jolietConfig = new JolietConfig();
+        jolietConfig.forceDotDelimiter(forceDotDelimiter.booleanValue());
+        applyConfig(jolietConfig);
+      }
+
+      // El Torito support
+      ElToritoConfig elToritoConfig = null;
+      if (bootImage != null) {
+        this.getLog().info("El Torito support enabled.");
+        elToritoConfig = new ElToritoConfig(bootImage, getBootEmulation(), getBootPlatformID(), bootImageID, bootImageSectorCount, bootImageLoadSegment);
+        elToritoConfig.setGenBootInfoTable(genBootInfoTable);
+      }
+
+      iso.process(iso9660Config, rrConfig, jolietConfig, elToritoConfig);
+    } catch (HandlerException e) {
+      throw new MojoExecutionException(e.getMessage(), e);
+    } catch (FileNotFoundException e) {
+      throw new MojoExecutionException(e.getMessage(), e);
+    } catch (ConfigException e) {
+      throw new MojoExecutionException(e.getMessage(), e);
     }
 
-    private int getBootPlatformID() {
-        if (bootImagePlatformID.equalsIgnoreCase("mac") ||
-                bootImagePlatformID.equalsIgnoreCase("macintosh") ||
-                bootImagePlatformID.equalsIgnoreCase("apple")) {
-            // Apple Macintosh
-            return ElToritoConfig.PLATFORM_ID_MAC;
-        } // else
-
-        if (bootImagePlatformID.equalsIgnoreCase("ppc") ||
-                bootImagePlatformID.equalsIgnoreCase("powerpc")) {
-            // PowerPC
-            return ElToritoConfig.PLATFORM_ID_PPC;
-        } // else
-
-        if (bootImagePlatformID.equalsIgnoreCase("efi")) {
-            // EFI
-            return ElToritoConfig.PLATFORM_ID_EFI;
-        } // else
-
-        // Default: X86
-        return ElToritoConfig.PLATFORM_ID_X86;
+    // Attach the generated iso for install/deploy
+    if ((classifier != null) || !project.getPackaging().equals("iso")) {
+      projectHelper.attachArtifact(project, "iso", classifier, isoFile);
+    } else {
+      project.getArtifact().setFile(isoFile);
     }
+  }
+
+  private void applyConfig(StandardConfig config) throws ConfigException {
+    if (StringUtils.isNotEmpty(systemId)) {
+      config.setSystemID(systemId);
+    }
+    if (StringUtils.isNotEmpty(volumeId)) {
+      config.setVolumeID(volumeId);
+    }
+    if (StringUtils.isNotEmpty(volumeSetId)) {
+      config.setVolumeSetID(volumeSetId);
+    }
+    if (StringUtils.isNotEmpty(publisher)) {
+      config.setPublisher(publisher);
+    }
+    if (StringUtils.isNotEmpty(preparer)) {
+      config.setDataPreparer(preparer);
+    }
+    if (StringUtils.isNotEmpty(application)) {
+      config.setApp(application);
+    }
+  }
+
+  private int getBootEmulation() {
+    if (bootImageEmulation.matches(".*1.*2.*")) {
+      // 1.2 MB diskette
+      return ElToritoConfig.BOOT_MEDIA_TYPE_1_2MEG_DISKETTE;
+    } // else
+
+    if (bootImageEmulation.matches(".*44.*")) {
+      // 1.44 MB diskette
+      return ElToritoConfig.BOOT_MEDIA_TYPE_1_44MEG_DISKETTE;
+    } // else
+
+    if (bootImageEmulation.matches(".*88.*")) {
+      // 2.88 MB diskette
+      return ElToritoConfig.BOOT_MEDIA_TYPE_2_88MEG_DISKETTE;
+    } // else
+
+    if (bootImageEmulation.matches(".*(hd|hard).*")) {
+      // Hard disk
+      return ElToritoConfig.BOOT_MEDIA_TYPE_HD;
+    } // else
+
+    // Default: No Emulation
+    return ElToritoConfig.BOOT_MEDIA_TYPE_NO_EMU;
+  }
+
+  private int getBootPlatformID() {
+    if (bootImagePlatformID.equalsIgnoreCase("mac") || bootImagePlatformID.equalsIgnoreCase("macintosh") || bootImagePlatformID.equalsIgnoreCase("apple")) {
+      // Apple Macintosh
+      return ElToritoConfig.PLATFORM_ID_MAC;
+    } // else
+
+    if (bootImagePlatformID.equalsIgnoreCase("ppc") || bootImagePlatformID.equalsIgnoreCase("powerpc")) {
+      // PowerPC
+      return ElToritoConfig.PLATFORM_ID_PPC;
+    } // else
+
+    if (bootImagePlatformID.equalsIgnoreCase("efi")) {
+      // EFI
+      return ElToritoConfig.PLATFORM_ID_EFI;
+    } // else
+
+    // Default: X86
+    return ElToritoConfig.PLATFORM_ID_X86;
+  }
 }
